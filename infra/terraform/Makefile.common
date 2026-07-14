@@ -1,0 +1,47 @@
+# Shared logic included by every stack's 3-line Makefile:
+#   STACK_NAME := 10-network
+#   include ../../Makefile.common
+#
+# ENV picks which file under THIS STACK's own tfvars/ folder to load — it's
+# the ONLY thing that changes between "we're planning dev" and "we're
+# planning prod". State is kept separate per environment automatically via
+# the backend key below (stacks/<env>/<stack>.tfstate), so dev and prod never
+# share or clobber each other's state. Each stack owns its own tfvars/*.tfvars
+# files (a stack can support "dev" before "staging"/"prod" exist for it).
+
+ENV ?= dev
+AWS_REGION ?= eu-west-3
+TF_STATE_BUCKET ?= sg-showcase-tfstate
+TF_LOCK_TABLE ?= sg-showcase-tf-lock
+
+ENV_TFVARS := tfvars/$(ENV).tfvars
+
+BACKEND_CONFIG = \
+	-backend-config="bucket=$(TF_STATE_BUCKET)" \
+	-backend-config="key=stacks/$(ENV)/$(STACK_NAME).tfstate" \
+	-backend-config="region=$(AWS_REGION)" \
+	-backend-config="dynamodb_table=$(TF_LOCK_TABLE)"
+
+.PHONY: init fmt validate plan apply destroy
+
+init:
+	terraform init -reconfigure $(BACKEND_CONFIG)
+
+fmt:
+	terraform fmt -check -recursive
+
+validate: init
+	terraform validate
+
+plan: init
+	terraform plan -var-file=$(ENV_TFVARS) -out=$(STACK_NAME).tfplan
+
+apply: init
+	terraform apply $(STACK_NAME).tfplan
+
+destroy: init
+	# -auto-approve is safe here: the real human confirmation already
+	# happened in infra-destroy.yml's guard job (typing "destroy-<env>"),
+	# before this ever runs. Without it, terraform destroy waits on stdin
+	# for "yes" — which doesn't exist in a CI runner, so the job hangs.
+	terraform destroy -auto-approve -var-file=$(ENV_TFVARS)

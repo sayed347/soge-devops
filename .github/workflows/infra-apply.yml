@@ -1,0 +1,73 @@
+# Manual-only, no auto-apply. Stack/environment dropdowns are static — add
+# new entries here when adding a stack or environment. Deploy role, gated by
+# a GitHub Environment per env (branch restriction lives in its settings).
+name: infra-apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to apply'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      stack:
+        description: 'Stack to apply ("all" = every stack, in order)'
+        required: true
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - 00-test
+          - 10-network
+          - 20-platform
+          - 30-services
+          - 40-edge
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: deploy-${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Plan + apply — ${{ github.event.inputs.stack }} (${{ github.event.inputs.environment }})
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+        run: |
+          set -e
+          if [ "${{ github.event.inputs.stack }}" = "all" ]; then
+            stack_dirs=$(ls -d infra/terraform/stacks/*/ 2>/dev/null | sort)
+          else
+            stack_dirs="infra/terraform/stacks/${{ github.event.inputs.stack }}/"
+          fi
+          for stack_dir in $stack_dirs; do
+            stack=$(basename "$stack_dir")
+            tfvars_file="${stack_dir}tfvars/${{ github.event.inputs.environment }}.tfvars"
+            if [ ! -f "$tfvars_file" ]; then
+              echo "Skipping $stack for ${{ github.event.inputs.environment }} (no $tfvars_file)"
+              continue
+            fi
+            echo "::group::terraform plan+apply — $stack (${{ github.event.inputs.environment }})"
+            make -C "$stack_dir" plan ENV=${{ github.event.inputs.environment }}
+            make -C "$stack_dir" apply ENV=${{ github.event.inputs.environment }}
+            echo "::endgroup::"
+          done

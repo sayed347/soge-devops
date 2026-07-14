@@ -1,0 +1,3 @@
+github_owner = "sayed347"
+github_repo  = "sg-devops-dryrun"
+aws_region   = "eu-west-3"

@@ -1,0 +1,82 @@
+# Environments are discovered dynamically from tfvars files; stacks are
+# planned in order (numeric folder prefix) within each environment's job.
+# Read-only role — safe on any branch/PR.
+name: infra-plan
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - 'infra/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.list.outputs.environments }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: list
+        run: |
+          envs=$(find infra/terraform/stacks -path '*/tfvars/*.tfvars' 2>/dev/null \
+                 | xargs -n1 basename \
+                 | sed 's/\.tfvars$//' \
+                 | sort -u \
+                 | jq -R -s -c 'split("\n")[:-1]')
+          echo "environments=$envs" >> "$GITHUB_OUTPUT"
+          echo "Discovered environments: $envs"
+
+  plan:
+    needs: discover
+    if: needs.discover.outputs.environments != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: ${{ fromJson(needs.discover.outputs.environments) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Plan every stack for ${{ matrix.environment }} (in order)
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+        run: |
+          set -e
+          for stack_dir in $(ls -d infra/terraform/stacks/*/ 2>/dev/null | sort); do
+            stack=$(basename "$stack_dir")
+            tfvars_file="${stack_dir}tfvars/${{ matrix.environment }}.tfvars"
+            if [ ! -f "$tfvars_file" ]; then
+              echo "Skipping $stack for ${{ matrix.environment }} (no $tfvars_file)"
+              continue
+            fi
+            echo "::group::terraform plan — $stack (${{ matrix.environment }})"
+            make -C "$stack_dir" plan ENV=${{ matrix.environment }}
+            echo "::endgroup::"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: infra/terraform/stacks/*/*.tfplan
+          retention-days: 5
+          if-no-files-found: ignore
