@@ -1,0 +1,325 @@
+:root {
+  --color-bg: #f2f4f7;
+  --color-surface: #ffffff;
+  --color-border: #e4e7ec;
+  --color-text: #1a2233;
+  --color-muted: #6b7383;
+  --color-primary: #c8102e;
+  --color-primary-dark: #a10d25;
+  --color-pending: #c17a12;
+  --color-pending-bg: #fdf1de;
+  --color-settled: #17824e;
+  --color-settled-bg: #e2f5eb;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--color-text);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Banking backdrop photo, darkened with a ledger-tone overlay + faint
+     guilloche-style line pattern + a red glow in the SG brand colour, so
+     the white page text stays readable over it. */
+  background-color: #0c0e13;
+  background-image:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 16px),
+    linear-gradient(165deg, rgba(12, 14, 19, 0.82) 0%, rgba(21, 23, 31, 0.86) 45%, rgba(12, 14, 19, 0.92) 100%),
+    radial-gradient(circle at 12% -10%, rgba(200, 16, 46, 0.45), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(200, 16, 46, 0.2), transparent 40%),
+    url('./assets/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.session-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #ffffff;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-link:hover {
+  color: var(--color-primary);
+}
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  max-width: none;
+  padding: 1.5rem;
+}
+
+.login-card {
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-card h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem;
+}
+
+.login-card > p {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+}
+
+.login-card form {
+  text-align: left;
+}
+
+.login-card .btn-primary {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.login-note {
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.page-header h1 {
+  font-size: 1.6rem;
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.page-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.95rem;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.card h2 {
+  font-size: 1.05rem;
+  margin: 0 0 1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.form-submit {
+  margin-top: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  margin-bottom: 0.3rem;
+}
+
+.field-hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+input, select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+input:focus, select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.form-error {
+  grid-column: 1 / -1;
+  color: var(--color-primary-dark);
+  background: #fdecec;
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0;
+}
+
+.form-error-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.form-error ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.form-error li {
+  margin: 0.2rem 0;
+}
+
+.stats-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.stat {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+}
+
+.stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat .stat-label {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filters-row .field {
+  min-width: 160px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+td {
+  padding: 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.empty-row td {
+  text-align: center;
+  color: var(--color-muted);
+  padding: 1.5rem;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge-pending {
+  color: var(--color-pending);
+  background: var(--color-pending-bg);
+}
+
+.badge-settled {
+  color: var(--color-settled);
+  background: var(--color-settled-bg);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.page-footer {
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8rem;
+  text-align: center;
+}

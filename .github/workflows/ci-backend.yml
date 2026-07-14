@@ -1,0 +1,23 @@
+name: ci-backend
+
+on:
+  pull_request:
+    paths:
+      - 'apps/backend/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/backend/**'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci-java.yml
+    with:
+      service-name: backend
+      app-path: apps/backend

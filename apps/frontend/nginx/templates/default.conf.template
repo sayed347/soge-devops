@@ -1,0 +1,41 @@
+server_tokens off;
+
+gzip on;
+gzip_comp_level 6;
+gzip_min_length 1100;
+gzip_proxied any;
+gzip_types
+    application/javascript
+    application/json
+    text/css
+    text/plain;
+
+server {
+    listen 8080;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://${BACKEND_HOST}/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Correlation-Id $http_x_correlation_id;
+    }
+
+    error_page 404 @json_404;
+    error_page 500 502 503 504 @json_5xx;
+
+    location @json_404 {
+        default_type application/json;
+        return 404 '{"error":"not_found"}';
+    }
+
+    location @json_5xx {
+        default_type application/json;
+        return 502 '{"error":"upstream_unavailable"}';
+    }
+}

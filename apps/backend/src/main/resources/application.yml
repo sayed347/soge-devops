@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: payment-orders
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  version: "0.1.0"
+  environment: ${APP_ENV:local}
+  ssm:
+    parameter-name: ${SSM_PARAMETER_NAME:/app/local/payment-orders/info-message}
+
+logging:
+  config: classpath:logback-spring.xml

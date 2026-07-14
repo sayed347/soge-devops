@@ -1,0 +1,77 @@
+# Not reusable (unlike ci-java.yml) — only one frontend service exists, so a
+# workflow_call wrapper would just be an extra layer of indirection with no
+# second caller to justify it.
+name: ci-frontend
+
+on:
+  pull_request:
+    paths:
+      - 'apps/frontend/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/frontend/**'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install, build and test
+        working-directory: apps/frontend
+        run: |
+          npm install
+          npm run build
+          npm test
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/frontend/dist
+          retention-days: 5
+
+  docker-build-scan:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/docker-build-push
+        with:
+          service-name: frontend
+          app-path: apps/frontend
+          image-tag: sha-${{ github.sha }}
+          push: 'false'
+
+  docker-push:
+    needs: docker-build-scan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: deploy-dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: ./.github/actions/docker-build-push
+        with:
+          service-name: frontend
+          app-path: apps/frontend
+          image-tag: sha-${{ github.sha }}
+          scan: 'false'
+          push: 'true'
+          environment: dev

@@ -1,0 +1,82 @@
+name: docker-build-push
+description: Build a service's Docker image, scan it with Trivy, optionally push a multi-arch manifest to ECR
+
+inputs:
+  service-name:
+    description: 'Service name — also the ECR repo suffix (sg-showcase-<service-name>)'
+    required: true
+  app-path:
+    description: 'Path to the app directory containing the Dockerfile'
+    required: true
+  image-tag:
+    description: 'Tag to apply to the built image'
+    required: true
+  scan:
+    description: 'Whether to build a local amd64 image and scan it with Trivy'
+    required: false
+    default: 'true'
+  push:
+    description: 'Whether to log in and push a multi-arch manifest to ECR'
+    required: false
+    default: 'false'
+  platforms:
+    description: 'Comma-separated platforms to build and push (only used when push=true)'
+    required: false
+    default: 'linux/amd64,linux/arm64'
+  environment:
+    description: 'Environment whose "latest deployed tag" SSM parameter gets updated (only used when push=true)'
+    required: false
+    default: 'dev'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up QEMU
+      if: inputs.push == 'true'
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build image for scanning (amd64, loaded locally)
+      if: inputs.scan == 'true'
+      shell: bash
+      run: |
+        docker buildx build --platform linux/amd64 \
+          --tag ${{ inputs.service-name }}:${{ inputs.image-tag }} \
+          --load ${{ inputs.app-path }}
+
+    - name: Scan image with Trivy
+      # Informational only — findings are reported in the job log but don't
+      # fail the build.
+      if: inputs.scan == 'true'
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      with:
+        image-ref: ${{ inputs.service-name }}:${{ inputs.image-tag }}
+        severity: CRITICAL,HIGH
+        exit-code: '0'
+
+    - name: Login to ECR
+      if: inputs.push == 'true'
+      id: ecr-login
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push multi-arch manifest
+      if: inputs.push == 'true'
+      shell: bash
+      run: |
+        registry="${{ steps.ecr-login.outputs.registry }}"
+        repo="sg-showcase-${{ inputs.service-name }}"
+        docker buildx build --platform ${{ inputs.platforms }} \
+          --tag "$registry/$repo:${{ inputs.image-tag }}" \
+          --push ${{ inputs.app-path }}
+
+    - name: Publish the pushed tag as the latest deployable image for this environment
+      if: inputs.push == 'true'
+      shell: bash
+      run: |
+        aws ssm put-parameter \
+          --name "/app/${{ inputs.environment }}/payment-orders/${{ inputs.service-name }}/image-tag" \
+          --value "${{ inputs.image-tag }}" \
+          --type String \
+          --overwrite
