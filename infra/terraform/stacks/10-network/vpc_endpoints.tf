@@ -15,7 +15,8 @@ locals {
 }
 
 resource "aws_security_group" "vpc_endpoints" {
-  name_prefix = "sg-showcase-${var.environment}-vpce-"
+  # "sg-" prefix is reserved by AWS for its own auto-generated IDs.
+  name_prefix = "showcase-${var.environment}-vpce-"
   description = "Allows HTTPS from inside the VPC to interface VPC endpoints"
   vpc_id      = aws_vpc.main.id
 
