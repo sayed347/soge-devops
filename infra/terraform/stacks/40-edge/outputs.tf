@@ -1,0 +1,8 @@
+output "cloudfront_domain_name" {
+  description = "Public URL for the app — https://<this value>/"
+  value       = aws_cloudfront_distribution.main.domain_name
+}
+
+output "cloudfront_distribution_id" {
+  value = aws_cloudfront_distribution.main.id
+}
