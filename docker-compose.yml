@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: paymentorders
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./apps/backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: paymentorders
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_ENV: local
+    ports:
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./apps/frontend
+    environment:
+      BACKEND_HOST: backend:8081
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
