@@ -176,6 +176,7 @@ data "aws_iam_policy_document" "demosg_boundary" {
       "arn:aws:kms:*:*:alias/sg-showcase-*",
       "arn:aws:s3:::sg-showcase-*",
       "arn:aws:logs:*:*:log-group:/ecs/sg-showcase-*",
+      "arn:aws:logs:*:*:log-group:/sg-showcase/*",
       "arn:aws:ssm:*:*:parameter/app/*/payment-orders/*/image-tag",
     ]
   }
